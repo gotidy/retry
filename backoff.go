@@ -73,7 +73,7 @@ func (e ExponentialBackOff) Iterator() Iterator {
 	delay := e.Start
 	return func() time.Duration {
 		cur := delay
-		delay *= time.Duration(e.Muliplier)
+		delay = time.Duration(float64(delay) * e.Muliplier)
 		return cur
 	}
 }
