@@ -45,7 +45,7 @@ func TestExponential(t *testing.T) {
 }
 
 func TestExponentialBackOff(t *testing.T) {
-	testExponentialBackOff(t, TruncatedExponentialBackOff(time.Second, 1.5, 0.5, 10*time.Second))
+	testExponentialBackOff(t, ExponentialBackOff(time.Second, 1.5, 0.5))
 }
 
 func TestTruncatedExponentialBackOff(t *testing.T) {
@@ -55,7 +55,7 @@ func TestTruncatedExponentialBackOff(t *testing.T) {
 func testExponentialBackOff(t *testing.T, exp ExponentialBackOffStrategy) {
 	delay := exp.Start
 	next := exp.Iterator()
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 10; i++ {
 		got := next()
 
 		if exp.Jitter != 0 {
