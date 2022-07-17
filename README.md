@@ -11,7 +11,7 @@ Retry operations with constant, delays and exponential backoff strategies.
 
 `go get github.com/gotidy/retry`
 
-Requireg 1.18, because generics are used.
+Required 1.18 of Go compiler.
 
 ## Example
 
