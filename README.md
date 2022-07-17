@@ -16,10 +16,10 @@ Requireg 1.18, because generics are used.
 ## Example
 
 ```go
-    delays := Delays[1*time.Second, 2*time.Second, 4*time.Second]
-	result, err := Retry(ctx, delays, func(ctx context.Context) (int, error) {
-		return 0, errors.New("")
-	})
+delays := Delays[1*time.Second, 2*time.Second, 4*time.Second]
+result, err := Retry(ctx, delays, func(ctx context.Context) (int, error) {
+	return 0, errors.New("")
+})
 ```
 
 ## Documentation
