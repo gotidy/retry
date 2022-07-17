@@ -11,12 +11,12 @@ const StopDelay time.Duration = -1
 // Iterator is a delays generator.
 type Iterator func() time.Duration
 
-// Strategy is a backoff policy for retrying an operation.
+// Strategy is a retrying stratagy for retrying an operation.
 type Strategy interface {
 	Iterator() Iterator
 }
 
-// Delays is a back off policy that returns specified delays.
+// Delays is a retry strategy that returns specified delays.
 type Delays []time.Duration
 
 // Iterator returns the specified delays iterator.
@@ -32,7 +32,7 @@ func (d Delays) Iterator() Iterator {
 	}
 }
 
-// Constant returns constant retrying delay.
+// ConstantBackOff is a retry strategy that always returns the same retry delay.
 type Constant time.Duration
 
 // Iterator returns constant delay generator.
@@ -42,17 +42,19 @@ func (c Constant) Iterator() Iterator {
 	}
 }
 
-// Zero is zero delayed strategy.
+// Zero is zero delayed strategy is a fixed retry strategy whose retry time is always zero,
+// meaning that the operation is retried immediately without waiting, indefinitely.
 func Zero() Constant {
 	return Constant(0)
 }
 
-// Stop is stop strategy.
+// Stop is a fixed retry strategy that always returns StopDelay,
+// meaning that the operation should never be retried.
 func Stop() Constant {
 	return Constant(StopDelay)
 }
 
-// ExponentialBackOffStrategy returns exponential increased delays.
+// ExponentialBackOffStrategy is exponential backoff strategey.
 type ExponentialBackOffStrategy struct {
 	// start delay
 	Start time.Duration
@@ -68,17 +70,17 @@ func Exponential(start time.Duration, factor float64) ExponentialBackOffStrategy
 	return ExponentialBackOffStrategy{Start: start, Factor: factor}
 }
 
-// ExponentialBackOff creates exponential back off.
+// ExponentialBackOff creates exponential backoff strategy.
 func ExponentialBackOff(start time.Duration, factor float64, jitter float64) ExponentialBackOffStrategy {
 	return ExponentialBackOffStrategy{Start: start, Factor: factor, Jitter: jitter}
 }
 
-// TruncatedExponentialBackOff creates exponential back off.
+// TruncatedExponentialBackOff creates exponential backoff strategy with max delay.
 func TruncatedExponentialBackOff(start time.Duration, factor, jitter float64, maxDelay time.Duration) ExponentialBackOffStrategy {
 	return ExponentialBackOffStrategy{Start: start, Factor: factor, Jitter: jitter, MaxDelay: maxDelay}
 }
 
-// Iterator returns exponential delays generator.
+// Iterator returns exponential backoff delays generator.
 func (e ExponentialBackOffStrategy) Iterator() Iterator {
 	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	delay := e.Start

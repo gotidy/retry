@@ -42,7 +42,7 @@ func WithRetryingTimeElapse(d time.Duration) Option {
 	}
 }
 
-// RetryWithResult function with specified back off.
+// RetryWithResult retry operation with specified strategy.
 func RetryWithResult[T any](ctx context.Context, strategy Strategy, operation func(ctx context.Context) (T, error), o ...Option) (result T, err error) {
 	var opts options
 	for _, opt := range o {
@@ -106,7 +106,7 @@ func RetryWithResult[T any](ctx context.Context, strategy Strategy, operation fu
 	}
 }
 
-// Retry function with specified back off.
+// Retry operation with specified strategy.
 func Retry(ctx context.Context, strategy Strategy, operation func(ctx context.Context) error, o ...Option) (err error) {
 	_, err = RetryWithResult(ctx, strategy, func(ctx context.Context) (struct{}, error) {
 		return struct{}{}, operation(ctx)
