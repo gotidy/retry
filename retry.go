@@ -9,32 +9,40 @@ import (
 )
 
 type options struct {
-	MaxRetries         int
-	Timeout            time.Duration
+	// MaxRetries is maximum count of retries.
+	MaxRetries int
+	// After Timeout the context will canceled.
+	Timeout time.Duration
+	// After RetryingTimeElapse the retrying will stopped.
 	RetryingTimeElapse time.Duration
 }
 
+// Option is a retring option setter.
 type Option func(opts *options)
 
+// WithMaxRetries sets MaxRetries option.
 func WithMaxRetries(n int) Option {
 	return func(opts *options) {
 		opts.MaxRetries = n
 	}
 }
 
+// WithMaxRetries sets Timeout option.
 func WithTimeout(d time.Duration) Option {
 	return func(opts *options) {
 		opts.Timeout = d
 	}
 }
 
+// WithRetryingTimeElapse sets Timeout option RetryingTimeElapse.
 func WithRetryingTimeElapse(d time.Duration) Option {
 	return func(opts *options) {
 		opts.RetryingTimeElapse = d
 	}
 }
 
-func Retry[T any](ctx context.Context, backOff BackOff, operation func(ctx context.Context) (T, error), o ...Option) (result T, err error) {
+// Retry function with specified back off.
+func Retry[T any](ctx context.Context, strategy Strategy, operation func(ctx context.Context) (T, error), o ...Option) (result T, err error) {
 	var opts options
 	for _, opt := range o {
 		opt(&opts)
@@ -63,7 +71,7 @@ func Retry[T any](ctx context.Context, backOff BackOff, operation func(ctx conte
 		}
 	}
 
-	next := backOff.Iterator()
+	next := strategy.Iterator()
 	for {
 		if ctx.Err() != nil {
 			return ptr.Zero[T](), fmtErr()

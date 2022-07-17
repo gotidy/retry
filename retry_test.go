@@ -12,7 +12,7 @@ func TestRetry(t *testing.T) {
 	const want = 10
 	count := 0
 
-	got, err := Retry(context.Background(), Zero, func(ctx context.Context) (int, error) {
+	got, err := Retry(context.Background(), Zero(), func(ctx context.Context) (int, error) {
 		if count == retries {
 			return want, nil
 		}
@@ -31,10 +31,10 @@ func TestRetry(t *testing.T) {
 }
 
 func TestRetry_Error(t *testing.T) {
-	delays := []time.Duration{time.Second, time.Second}
+	delays := Delays{time.Second, time.Second}
 	count := 0
 
-	_, err := Retry(context.Background(), Delays(delays...), func(ctx context.Context) (int, error) {
+	_, err := Retry(context.Background(), delays, func(ctx context.Context) (int, error) {
 		count++
 		return 0, errors.New("")
 	})
@@ -48,7 +48,7 @@ func TestRetry_Error(t *testing.T) {
 
 func TestRetry_Context(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	_, err := Retry(ctx, Zero, func(ctx context.Context) (int, error) {
+	_, err := Retry(ctx, Zero(), func(ctx context.Context) (int, error) {
 		cancel()
 		return 0, errors.New("")
 	})
@@ -76,7 +76,7 @@ func TestRetry_Timeout(t *testing.T) {
 func TestRetry_MaxRetring(t *testing.T) {
 	const retries = 5
 	count := 0
-	_, err := Retry(context.Background(), Zero, func(ctx context.Context) (int, error) {
+	_, err := Retry(context.Background(), Zero(), func(ctx context.Context) (int, error) {
 		count++
 		return 0, errors.New("")
 	}, WithMaxRetries(retries))
