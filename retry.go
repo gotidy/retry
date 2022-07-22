@@ -2,6 +2,7 @@ package retry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -42,8 +43,8 @@ func WithRetryingTimeElapse(d time.Duration) Option {
 	}
 }
 
-// RetryWithResult retry operation with specified strategy.
-func RetryWithResult[T any](ctx context.Context, strategy Strategy, operation func(ctx context.Context) (T, error), o ...Option) (result T, err error) {
+// DoWithResult retry operation with specified strategy.
+func DoWithResult[T any](ctx context.Context, strategy Strategy, operation func(ctx context.Context) (T, error), o ...Option) (result T, err error) {
 	var opts options
 	for _, opt := range o {
 		opt(&opts)
@@ -82,6 +83,10 @@ func RetryWithResult[T any](ctx context.Context, strategy Strategy, operation fu
 		if err == nil {
 			return result, nil
 		}
+		var perm PermanentError
+		if ok := errors.As(err, &perm); ok {
+			return ptr.Zero[T](), perm
+		}
 
 		if opts.RetryingTimeElapse > 0 && opts.RetryingTimeElapse <= time.Since(start) {
 			return ptr.Zero[T](), fmt.Errorf("retring time elapsed: %s: %w", opts.RetryingTimeElapse, err)
@@ -106,10 +111,22 @@ func RetryWithResult[T any](ctx context.Context, strategy Strategy, operation fu
 	}
 }
 
-// Retry operation with specified strategy.
-func Retry(ctx context.Context, strategy Strategy, operation func(ctx context.Context) error, o ...Option) (err error) {
-	_, err = RetryWithResult(ctx, strategy, func(ctx context.Context) (struct{}, error) {
+// Do operation with specified strategy.
+func Do(ctx context.Context, strategy Strategy, operation func(ctx context.Context) error, o ...Option) (err error) {
+	_, err = DoWithResult(ctx, strategy, func(ctx context.Context) (struct{}, error) {
 		return struct{}{}, operation(ctx)
 	}, o...)
 	return err
+}
+
+type PermanentError struct {
+	Err error
+}
+
+func (e PermanentError) Error() string {
+	return e.Err.Error()
+}
+
+func Permanent(err error) PermanentError {
+	return PermanentError{Err: err}
 }
