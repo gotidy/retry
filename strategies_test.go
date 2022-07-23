@@ -17,7 +17,7 @@ func TestDelays(t *testing.T) {
 	}
 }
 
-func testRepeatly(t *testing.T, b Strategy, want time.Duration) {
+func testRepeatedly(t *testing.T, b Strategy, want time.Duration) {
 	next := b.Iterator()
 	for i := 0; i < 10; i++ {
 		got := next()
@@ -29,15 +29,15 @@ func testRepeatly(t *testing.T, b Strategy, want time.Duration) {
 
 func TestConstant(t *testing.T) {
 	delay := time.Second
-	testRepeatly(t, Constant(delay), delay)
+	testRepeatedly(t, Constant(delay), delay)
 }
 
 func TestZero(t *testing.T) {
-	testRepeatly(t, Zero(), 0)
+	testRepeatedly(t, Zero(), 0)
 }
 
 func TestStop(t *testing.T) {
-	testRepeatly(t, Stop(), StopDelay)
+	testRepeatedly(t, Stop(), StopDelay)
 }
 
 func TestExponential(t *testing.T) {

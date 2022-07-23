@@ -79,7 +79,7 @@ func DoR[T any](ctx context.Context, strategy Strategy, operation func(ctx conte
 	next := strategy.Iterator()
 	for {
 		if ctx.Err() != nil {
-			return ptr.Zero[T](), newRetryError(err, ctx.Err(), "", retrying, delay, time.Since(start))
+			return ptr.Zero[T](), newError(err, ctx.Err(), "", retrying, delay, time.Since(start))
 		}
 
 		result, err = operation(ctx)
@@ -93,16 +93,16 @@ func DoR[T any](ctx context.Context, strategy Strategy, operation func(ctx conte
 
 		elapsed := time.Since(start)
 		if opts.MaxElapsedTime > 0 && opts.MaxElapsedTime <= elapsed {
-			return ptr.Zero[T](), newRetryError(err, ctx.Err(), fmt.Sprintf("retrying time elapsed: %s", opts.MaxElapsedTime), retrying, delay, time.Since(start))
+			return ptr.Zero[T](), newError(err, ctx.Err(), fmt.Sprintf("retrying time elapsed: %s", opts.MaxElapsedTime), retrying, delay, time.Since(start))
 		}
 
 		if opts.MaxRetries > 0 && opts.MaxRetries <= retrying {
-			return ptr.Zero[T](), newRetryError(err, ctx.Err(), fmt.Sprintf("maximum retries elapsed: %d", opts.MaxRetries), retrying, delay, time.Since(start))
+			return ptr.Zero[T](), newError(err, ctx.Err(), fmt.Sprintf("maximum retries elapsed: %d", opts.MaxRetries), retrying, delay, time.Since(start))
 		}
 
 		delay = next()
 		if delay == StopDelay {
-			return ptr.Zero[T](), newRetryError(err, ctx.Err(), "", retrying, delay, time.Since(start))
+			return ptr.Zero[T](), newError(err, ctx.Err(), "", retrying, delay, time.Since(start))
 		}
 
 		if opts.Notify != nil {
@@ -111,7 +111,7 @@ func DoR[T any](ctx context.Context, strategy Strategy, operation func(ctx conte
 
 		select {
 		case <-ctx.Done():
-			return ptr.Zero[T](), newRetryError(err, ctx.Err(), "", retrying, delay, time.Since(start))
+			return ptr.Zero[T](), newError(err, ctx.Err(), "", retrying, delay, time.Since(start))
 		case <-time.After(delay):
 		}
 
@@ -168,7 +168,8 @@ func (e PermanentError) Unwrap() error {
 	return e.Err
 }
 
-type RetryError struct {
+// Error is an error that wraps the original error and contains information about the last retry.
+type Error struct {
 	LastDelay   time.Duration
 	ElapsedTime time.Duration
 	Retries     int
@@ -176,8 +177,8 @@ type RetryError struct {
 	Err         error
 }
 
-func newRetryError(err, ctxErr error, msg string, retries int, lastDelay time.Duration, elapsed time.Duration) error {
-	e := &RetryError{
+func newError(err, ctxErr error, msg string, retries int, lastDelay time.Duration, elapsed time.Duration) error {
+	e := &Error{
 		ElapsedTime: elapsed,
 		Retries:     retries,
 		LastDelay:   lastDelay,
@@ -200,17 +201,17 @@ func newRetryError(err, ctxErr error, msg string, retries int, lastDelay time.Du
 	return e
 }
 
-func (e *RetryError) Error() string {
+func (e *Error) Error() string {
 	return e.Msg + ": " + e.Error()
 }
 
-func (e *RetryError) Unwrap() error {
+func (e *Error) Unwrap() error {
 	return e.Err
 }
 
-// As returns RetryError that wrap an original operation error.
-func As(err error) *RetryError {
-	e := &RetryError{}
+// As returns retry Error that wrap an original operation error.
+func As(err error) *Error {
+	e := &Error{}
 	if errors.As(err, &e) {
 		return e
 	}
