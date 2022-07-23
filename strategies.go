@@ -19,7 +19,7 @@ type Strategy interface {
 // Delays is a retry strategy that returns specified delays.
 type Delays []time.Duration
 
-// Iterator returns the specified delays iterator.
+// Iterator returns the specified delays generator.
 func (d Delays) Iterator() Iterator {
 	i := 0
 	return func() time.Duration {
@@ -32,7 +32,7 @@ func (d Delays) Iterator() Iterator {
 	}
 }
 
-// ConstantBackOff is a retry strategy that always returns the same retry delay.
+// Constant is a retry strategy that always returns the same retry delay.
 type Constant time.Duration
 
 // Iterator returns constant delay generator.
@@ -56,11 +56,11 @@ func Stop() Constant {
 
 // ExponentialBackOff is exponential backoff strategey.
 type ExponentialBackOff struct {
-	// start delay
+	// Start delay.
 	Start time.Duration
-	// Multiplier factor. Next delay = delay * multiplier
+	// Multiplier factor. Next delay = delay * multiplier.
 	Factor float64
-	// Delay randomization. delay = delay * (random value in range [1 - Jitter, 1 + Jitter])
+	// Delay randomization. delay = delay * (random value in range [1 - Jitter, 1 + Jitter]).
 	Jitter float64
 	// Delay maximum.
 	MaxDelay time.Duration
