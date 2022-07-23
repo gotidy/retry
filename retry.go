@@ -74,25 +74,12 @@ func DoR[T any](ctx context.Context, strategy Strategy, operation func(ctx conte
 
 	start := time.Now()
 	retrying := 1
-
-	fmtErr := func() error {
-		elapsed := time.Since(start)
-		switch {
-		case ctx.Err() != nil && err == nil:
-			return errorf(ctx.Err(), "retrying %d canceled, time elapsed: %s", retrying, elapsed)
-		case ctx.Err() != nil && err != nil:
-			return errorf(err, "retrying %d canceled: %s, time elapsed: %s", retrying, ctx.Err().Error(), elapsed)
-		case ctx.Err() == nil && err != nil:
-			return errorf(err, "retrying %d stopped, time elapsed: %s", retrying, elapsed)
-		default:
-			return nil
-		}
-	}
+	var delay time.Duration
 
 	next := strategy.Iterator()
 	for {
 		if ctx.Err() != nil {
-			return ptr.Zero[T](), fmtErr()
+			return ptr.Zero[T](), newRetryError(err, ctx.Err(), "", retrying, delay, time.Since(start))
 		}
 
 		result, err = operation(ctx)
@@ -106,16 +93,16 @@ func DoR[T any](ctx context.Context, strategy Strategy, operation func(ctx conte
 
 		elapsed := time.Since(start)
 		if opts.MaxElapsedTime > 0 && opts.MaxElapsedTime <= elapsed {
-			return ptr.Zero[T](), fmt.Errorf("retrying time elapsed: %s: %w", opts.MaxElapsedTime, err)
+			return ptr.Zero[T](), newRetryError(err, ctx.Err(), fmt.Sprintf("retrying time elapsed: %s", opts.MaxElapsedTime), retrying, delay, time.Since(start))
 		}
 
 		if opts.MaxRetries > 0 && opts.MaxRetries <= retrying {
-			return ptr.Zero[T](), fmt.Errorf("maximum retries elapsed: %d: %w", opts.MaxRetries, err)
+			return ptr.Zero[T](), newRetryError(err, ctx.Err(), fmt.Sprintf("maximum retries elapsed: %d", opts.MaxRetries), retrying, delay, time.Since(start))
 		}
 
-		delay := next()
+		delay = next()
 		if delay == StopDelay {
-			return ptr.Zero[T](), fmtErr()
+			return ptr.Zero[T](), newRetryError(err, ctx.Err(), "", retrying, delay, time.Since(start))
 		}
 
 		if opts.Notify != nil {
@@ -124,7 +111,7 @@ func DoR[T any](ctx context.Context, strategy Strategy, operation func(ctx conte
 
 		select {
 		case <-ctx.Done():
-			return ptr.Zero[T](), fmtErr()
+			return ptr.Zero[T](), newRetryError(err, ctx.Err(), "", retrying, delay, time.Since(start))
 		case <-time.After(delay):
 		}
 
@@ -181,27 +168,58 @@ func (e PermanentError) Unwrap() error {
 	return e.Err
 }
 
-type retryError struct {
-	Msg string
-	Err error
+type RetryError struct {
+	LastDelay   time.Duration
+	ElapsedTime time.Duration
+	Retries     int
+	Msg         string
+	Err         error
 }
 
-func errorf(err error, msg string, a ...interface{}) retryError {
-	return retryError{Msg: fmt.Sprintf(msg, a...), Err: err}
+func newRetryError(err, ctxErr error, msg string, retries int, lastDelay time.Duration, elapsed time.Duration) error {
+	e := &RetryError{
+		ElapsedTime: elapsed,
+		Retries:     retries,
+		LastDelay:   lastDelay,
+		Err:         err,
+	}
+	switch {
+	case ctxErr != nil && err == nil:
+		e.Msg = fmt.Sprintf("retrying %d canceled, time elapsed: %s, last delay: %s", retries, elapsed, lastDelay)
+		e.Err = ctxErr
+	case ctxErr != nil && err != nil:
+		e.Msg = fmt.Sprintf("retrying %d canceled: %s, time elapsed: %s, last delay: %s", retries, ctxErr.Error(), elapsed, lastDelay)
+	case ctxErr == nil && err != nil:
+		e.Msg = fmt.Sprintf("retrying %d stopped, time elapsed: %s, last delay: %s", retries, elapsed, lastDelay)
+	default:
+		return err
+	}
+	if msg != "" {
+		e.Msg = msg + ": " + e.Msg
+	}
+	return e
 }
 
-func (e retryError) Error() string {
+func (e *RetryError) Error() string {
 	return e.Msg + ": " + e.Error()
 }
 
-func (e retryError) Unwrap() error {
+func (e *RetryError) Unwrap() error {
 	return e.Err
+}
+
+// As returns RetryError that wrap an original operation error.
+func As(err error) *RetryError {
+	e := &RetryError{}
+	if errors.As(err, &e) {
+		return e
+	}
+	return nil
 }
 
 // Unwrap returns an original operation error.
 func Unwrap(err error) error {
-	var e retryError
-	if errors.As(err, &e) {
+	if e := As(err); e != nil {
 		return e.Err
 	}
 	return err
