@@ -32,3 +32,22 @@ func ExampleDo() {
 	// Output:
 	// oops
 }
+
+func ExampleExponential() {
+	count := 1
+	err := Do(context.Background(), Exponential(time.Second, 2, 0), func(ctx context.Context) error {
+		if count > 3 {
+			return nil
+		}
+		count++
+		return errors.New("don't touch me")
+	}, WithNotify(func(err error, delay time.Duration, try int, elapsed time.Duration) {
+		fmt.Println(delay, try)
+	}))
+	fmt.Println(err)
+	// Output:
+	// 1s 1
+	// 2s 2
+	// 4s 3
+	// <nil>
+}

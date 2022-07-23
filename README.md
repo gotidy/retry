@@ -17,10 +17,13 @@ Required 1.18 version of Go compiler.
 
 ```go
 delays := Delays[1*time.Second, 2*time.Second, 4*time.Second]
-result, err := RetryWithResult(ctx, delays, func(ctx context.Context) (int, error) {
-	return 0, errors.New("")
+result, err := DoR(ctx, delays, func(ctx context.Context) (int, error) {
+    return 0, errors.New("")
 })
 ```
+
+[More](/examples_test.go)
+
 
 ## Documentation
 
