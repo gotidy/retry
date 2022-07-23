@@ -54,34 +54,30 @@ func Stop() Constant {
 	return Constant(StopDelay)
 }
 
-// ExponentialBackOffStrategy is exponential backoff strategey.
-type ExponentialBackOffStrategy struct {
+// ExponentialBackOff is exponential backoff strategey.
+type ExponentialBackOff struct {
 	// start delay
 	Start time.Duration
 	// Multiplier factor. Next delay = delay * multiplier
 	Factor float64
 	// Delay randomization. delay = delay * (random value in range [1 - Jitter, 1 + Jitter])
-	Jitter   float64
+	Jitter float64
+	// Delay maximum.
 	MaxDelay time.Duration
 }
 
-// Exponential creates exponential strategy.
-func Exponential(start time.Duration, factor float64) ExponentialBackOffStrategy {
-	return ExponentialBackOffStrategy{Start: start, Factor: factor}
+// Exponential creates exponential backoff strategy.
+func Exponential(start time.Duration, factor float64, jitter float64) ExponentialBackOff {
+	return ExponentialBackOff{Start: start, Factor: factor, Jitter: jitter}
 }
 
-// ExponentialBackOff creates exponential backoff strategy.
-func ExponentialBackOff(start time.Duration, factor float64, jitter float64) ExponentialBackOffStrategy {
-	return ExponentialBackOffStrategy{Start: start, Factor: factor, Jitter: jitter}
-}
-
-// TruncatedExponentialBackOff creates exponential backoff strategy with max delay.
-func TruncatedExponentialBackOff(start time.Duration, factor, jitter float64, maxDelay time.Duration) ExponentialBackOffStrategy {
-	return ExponentialBackOffStrategy{Start: start, Factor: factor, Jitter: jitter, MaxDelay: maxDelay}
+// TruncatedExponential creates exponential backoff strategy with max delay.
+func TruncatedExponential(start time.Duration, factor, jitter float64, maxDelay time.Duration) ExponentialBackOff {
+	return ExponentialBackOff{Start: start, Factor: factor, Jitter: jitter, MaxDelay: maxDelay}
 }
 
 // Iterator returns exponential backoff delays generator.
-func (e ExponentialBackOffStrategy) Iterator() Iterator {
+func (e ExponentialBackOff) Iterator() Iterator {
 	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	delay := e.Start
 	return func() time.Duration {

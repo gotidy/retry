@@ -41,18 +41,18 @@ func TestStop(t *testing.T) {
 }
 
 func TestExponential(t *testing.T) {
-	testExponentialBackOff(t, Exponential(time.Second, 1.5))
+	testExponentialBackOff(t, Exponential(time.Second, 1.5, 0))
 }
 
 func TestExponentialBackOff(t *testing.T) {
-	testExponentialBackOff(t, ExponentialBackOff(time.Second, 1.5, 0.5))
+	testExponentialBackOff(t, Exponential(time.Second, 1.5, 0.5))
 }
 
 func TestTruncatedExponentialBackOff(t *testing.T) {
-	testExponentialBackOff(t, TruncatedExponentialBackOff(time.Second, 1.5, 0, 10*time.Second))
+	testExponentialBackOff(t, TruncatedExponential(time.Second, 1.5, 0, 10*time.Second))
 }
 
-func testExponentialBackOff(t *testing.T, exp ExponentialBackOffStrategy) {
+func testExponentialBackOff(t *testing.T, exp ExponentialBackOff) {
 	delay := exp.Start
 	next := exp.Iterator()
 	for i := 0; i < 10; i++ {
@@ -64,10 +64,8 @@ func testExponentialBackOff(t *testing.T, exp ExponentialBackOffStrategy) {
 			if !(minDelay <= got && got <= maxDelay) {
 				t.Errorf("expected between %v and %v, got %v", minDelay, maxDelay, got)
 			}
-		} else {
-			if !reflect.DeepEqual(got, delay) {
-				t.Errorf("got: %v, want: %v", got, delay)
-			}
+		} else if !reflect.DeepEqual(got, delay) {
+			t.Errorf("got: %v, want: %v", got, delay)
 		}
 		delay = time.Duration(float64(delay) * exp.Factor)
 		if exp.MaxDelay != 0 && delay > exp.MaxDelay {

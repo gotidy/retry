@@ -3,6 +3,7 @@ package retry
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -12,7 +13,7 @@ func TestDoWithResult(t *testing.T) {
 	const want = 10
 	count := 0
 
-	got, err := DoWithResult(context.Background(), Zero(), func(ctx context.Context) (int, error) {
+	got, err := DoR(context.Background(), Zero(), func(ctx context.Context) (int, error) {
 		if count == retries {
 			return want, nil
 		}
@@ -34,7 +35,7 @@ func TestDoWithResult_Error(t *testing.T) {
 	delays := Delays{time.Second, time.Second}
 	count := 0
 
-	_, err := DoWithResult(context.Background(), delays, func(ctx context.Context) (int, error) {
+	_, err := DoR(context.Background(), delays, func(ctx context.Context) (int, error) {
 		count++
 		return 0, errors.New("")
 	})
@@ -48,7 +49,7 @@ func TestDoWithResult_Error(t *testing.T) {
 
 func TestRetryWithResult_Context(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	_, err := DoWithResult(ctx, Zero(), func(ctx context.Context) (int, error) {
+	_, err := DoR(ctx, Zero(), func(ctx context.Context) (int, error) {
 		cancel()
 		return 0, errors.New("")
 	})
@@ -56,7 +57,7 @@ func TestRetryWithResult_Context(t *testing.T) {
 		t.Error("expected error but got nil")
 	}
 
-	_, err = DoWithResult(ctx, Constant(time.Second), func(ctx context.Context) (int, error) {
+	_, err = DoR(ctx, Constant(time.Second), func(ctx context.Context) (int, error) {
 		return 0, errors.New("")
 	})
 	if err == nil {
@@ -65,7 +66,7 @@ func TestRetryWithResult_Context(t *testing.T) {
 }
 
 func TestRetryWithResult_Timeout(t *testing.T) {
-	_, err := DoWithResult(context.Background(), Constant(100*time.Millisecond), func(ctx context.Context) (int, error) {
+	_, err := DoR(context.Background(), Constant(100*time.Millisecond), func(ctx context.Context) (int, error) {
 		return 0, errors.New("")
 	}, WithTimeout(time.Second))
 	if err == nil {
@@ -73,13 +74,13 @@ func TestRetryWithResult_Timeout(t *testing.T) {
 	}
 }
 
-func TestRetryWithResult_MaxRetring(t *testing.T) {
+func TestRetryWithResult_MaxRetrying(t *testing.T) {
 	const retries = 5
 	count := 0
-	_, err := DoWithResult(context.Background(), Zero(), func(ctx context.Context) (int, error) {
+	_, err := DoRN(context.Background(), Zero(), func(ctx context.Context) (int, error) {
 		count++
 		return 0, errors.New("")
-	}, WithMaxRetries(retries))
+	}, retries)
 	if err == nil {
 		t.Error("expected error but got nil")
 	}
@@ -88,10 +89,10 @@ func TestRetryWithResult_MaxRetring(t *testing.T) {
 	}
 }
 
-func TestRetryWithResult_RetryingTimeElapse(t *testing.T) {
-	_, err := DoWithResult(context.Background(), Constant(100*time.Millisecond), func(ctx context.Context) (int, error) {
+func TestRetryWithResult_MaxElapsedTime(t *testing.T) {
+	_, err := DoRE(context.Background(), Constant(100*time.Millisecond), func(ctx context.Context) (int, error) {
 		return 0, errors.New("")
-	}, WithRetryingTimeElapse(time.Second))
+	}, time.Second)
 	if err == nil {
 		t.Error("expected error but got nil")
 	}
@@ -114,4 +115,51 @@ func TestRetry(t *testing.T) {
 	if count != retries {
 		t.Errorf("unexpected count of retries: %d, expected: %d", count, retries)
 	}
+}
+
+func TestPermanent(t *testing.T) {
+	want := errors.New("want")
+	err := Permanent(want)
+
+	got := errors.Unwrap(err)
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+
+	if fmt.Sprintf("%s", want) != fmt.Sprintf("%s", err) {
+		t.Errorf("Error() = %v, want %v", err.Error(), want.Error())
+	}
+}
+
+func TestDo_PermanentError(t *testing.T) {
+	const retries = 5
+	count := 0
+	wantErr := errors.New("error")
+
+	err := Do(context.Background(), Zero(), func(ctx context.Context) error {
+		count++
+		return Permanent(wantErr)
+	})
+	if !errors.Is(err, wantErr) {
+		t.Errorf("expected error: %s, got: %s", wantErr, err)
+	}
+	if count != 1 {
+		t.Errorf("unexpected count of retries: %d, expected: %d", count, 1)
+	}
+}
+
+func TestDo_Notify(t *testing.T) {
+	const retries = 2
+	const constDelay = time.Microsecond
+
+	_ = Do(context.Background(), Constant(constDelay), func(ctx context.Context) error {
+		return errors.New("error")
+	}, WithNotify(func(err error, delay time.Duration, try int, elapsed time.Duration) {
+		if delay != constDelay {
+			t.Errorf("want delay: %s, got: %s", constDelay, delay)
+		}
+		if try != 1 {
+			t.Errorf("want try: %d, got: %d", 1, try)
+		}
+	}), WithMaxRetries(retries))
 }
