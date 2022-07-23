@@ -59,7 +59,7 @@ func WithNotify(n Notify) Option {
 	}
 }
 
-// DoR retry operation with result with specified strategy.
+// DoR retries operation with result and specified strategy.
 func DoR[T any](ctx context.Context, strategy Strategy, operation func(ctx context.Context) (T, error), o ...Option) (result T, err error) {
 	var opts options
 	for _, opt := range o {
@@ -119,12 +119,12 @@ func DoR[T any](ctx context.Context, strategy Strategy, operation func(ctx conte
 	}
 }
 
-// DoRN retry operation with result with specified strategy and max retries.
+// DoRN retries the operation with result with specified strategy and the maximum number of retries.
 func DoRN[T any](ctx context.Context, strategy Strategy, operation func(ctx context.Context) (T, error), maxReties int, o ...Option) (result T, err error) {
 	return DoR(ctx, strategy, operation, append(o, WithMaxRetries(maxReties))...)
 }
 
-// DoRE retry operation with result with specified strategy and max elapsed time.
+// DoRE retries the operation with result with specified strategy and maximum elapsed time.
 func DoRE[T any](ctx context.Context, strategy Strategy, operation func(ctx context.Context) (T, error), maxElapsedTime time.Duration, o ...Option) (result T, err error) {
 	return DoR(ctx, strategy, operation, append(o, WithMaxElapsedTime(maxElapsedTime))...)
 }
@@ -137,12 +137,12 @@ func Do(ctx context.Context, strategy Strategy, operation func(ctx context.Conte
 	return err
 }
 
-// DoN retry operation with specified strategy and max retries.
+// DoN retries the operation with specified strategy and the maximum number of retries.
 func DoN(ctx context.Context, strategy Strategy, operation func(ctx context.Context) error, maxReties int, o ...Option) (err error) {
 	return Do(ctx, strategy, operation, append(o, WithMaxRetries(maxReties))...)
 }
 
-// DoE retry operation with specified strategy and max elapsed time.
+// DoE retries the operation with the specified strategy and maximum elapsed time.
 func DoE(ctx context.Context, strategy Strategy, operation func(ctx context.Context) error, maxElapsedTime time.Duration, o ...Option) (err error) {
 	return Do(ctx, strategy, operation, append(o, WithMaxElapsedTime(maxElapsedTime))...)
 }
