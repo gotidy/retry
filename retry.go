@@ -79,11 +79,11 @@ func DoR[T any](ctx context.Context, strategy Strategy, operation func(ctx conte
 		elapsed := time.Since(start)
 		switch {
 		case ctx.Err() != nil && err == nil:
-			return fmt.Errorf("retrying \"%d\" canceled, time elapsed: %s: %w", retrying, elapsed, ctx.Err())
+			return errorf(ctx.Err(), "retrying %d canceled, time elapsed: %s", retrying, elapsed)
 		case ctx.Err() != nil && err != nil:
-			return fmt.Errorf("retrying \"%d\" canceled: %s, time elapsed: %s: %w", retrying, ctx.Err().Error(), elapsed, err)
+			return errorf(err, "retrying %d canceled: %s, time elapsed: %s", retrying, ctx.Err().Error(), elapsed)
 		case ctx.Err() == nil && err != nil:
-			return fmt.Errorf("retrying \"%d\" stopped, time elapsed: %s: %w", retrying, elapsed, err)
+			return errorf(err, "retrying %d stopped, time elapsed: %s", retrying, elapsed)
 		default:
 			return nil
 		}
@@ -179,4 +179,30 @@ func (e PermanentError) Error() string {
 
 func (e PermanentError) Unwrap() error {
 	return e.Err
+}
+
+type retryError struct {
+	Msg string
+	Err error
+}
+
+func errorf(err error, msg string, a ...interface{}) retryError {
+	return retryError{Msg: fmt.Sprintf(msg, a...), Err: err}
+}
+
+func (e retryError) Error() string {
+	return e.Msg + ": " + e.Error()
+}
+
+func (e retryError) Unwrap() error {
+	return e.Err
+}
+
+// Unwrap returns an original operation error.
+func Unwrap(err error) error {
+	var e retryError
+	if errors.As(err, &e) {
+		return e.Err
+	}
+	return err
 }
