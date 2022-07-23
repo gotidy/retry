@@ -11,7 +11,7 @@ const StopDelay time.Duration = -1
 // Iterator is a delays generator.
 type Iterator func() time.Duration
 
-// Strategy is a retrying stratagy for retrying an operation.
+// Strategy is a retrying strategy for retrying an operation.
 type Strategy interface {
 	Iterator() Iterator
 }
@@ -54,7 +54,7 @@ func Stop() Constant {
 	return Constant(StopDelay)
 }
 
-// ExponentialBackOff is exponential backoff strategey.
+// ExponentialBackOff is exponential backoff strategy.
 type ExponentialBackOff struct {
 	// Start delay.
 	Start time.Duration

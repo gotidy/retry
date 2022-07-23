@@ -24,7 +24,6 @@ result, err := DoR(ctx, delays, func(ctx context.Context) (int, error) {
 
 [More](/examples_test.go)
 
-
 ## Documentation
 
 [godev]

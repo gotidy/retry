@@ -166,7 +166,10 @@ type PermanentError struct {
 }
 
 // Permanent wrap error with permanent error.
-func Permanent(err error) PermanentError {
+func Permanent(err error) error {
+	if err == nil {
+		return nil
+	}
 	return PermanentError{Err: err}
 }
 
