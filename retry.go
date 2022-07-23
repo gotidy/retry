@@ -168,7 +168,7 @@ func (e PermanentError) Unwrap() error {
 	return e.Err
 }
 
-// Error is an error that wraps the original error and contains information about the last retry.
+// Error wraps the original error and contains information about the last retry.
 type Error struct {
 	LastDelay   time.Duration
 	ElapsedTime time.Duration
