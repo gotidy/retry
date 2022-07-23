@@ -59,7 +59,7 @@ func WithNotify(n Notify) Option {
 	}
 }
 
-// DoR retries operation with result and specified strategy.
+// DoR retries the operation with result and specified strategy.
 func DoR[T any](ctx context.Context, strategy Strategy, operation func(ctx context.Context) (T, error), o ...Option) (result T, err error) {
 	var opts options
 	for _, opt := range o {
@@ -129,7 +129,7 @@ func DoRE[T any](ctx context.Context, strategy Strategy, operation func(ctx cont
 	return DoR(ctx, strategy, operation, append(o, WithMaxElapsedTime(maxElapsedTime))...)
 }
 
-// Do operation with specified strategy.
+// Do retries the operation with specified strategy.
 func Do(ctx context.Context, strategy Strategy, operation func(ctx context.Context) error, o ...Option) (err error) {
 	_, err = DoR(ctx, strategy, func(ctx context.Context) (struct{}, error) {
 		return struct{}{}, operation(ctx)
