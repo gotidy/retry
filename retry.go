@@ -193,7 +193,7 @@ func newError(err, ctxErr error, msg string, retries int, lastDelay time.Duratio
 	case ctxErr == nil && err != nil:
 		e.Msg = fmt.Sprintf("retrying %d stopped, time elapsed: %s, last delay: %s", retries, elapsed, lastDelay)
 	default:
-		return err
+		return nil
 	}
 	if msg != "" {
 		e.Msg = msg + ": " + e.Msg
@@ -202,7 +202,10 @@ func newError(err, ctxErr error, msg string, retries int, lastDelay time.Duratio
 }
 
 func (e *Error) Error() string {
-	return e.Msg + ": " + e.Error()
+	if e.Err == nil {
+		return e.Msg
+	}
+	return e.Msg + ": " + e.Err.Error()
 }
 
 func (e *Error) Unwrap() error {

@@ -163,3 +163,21 @@ func TestDo_Notify(t *testing.T) {
 		}
 	}), WithMaxRetries(retries))
 }
+
+func TestAs(t *testing.T) {
+	e := &Error{}
+	if got := As(e); e != got {
+		t.Errorf("As() = %v, want %v", got, e)
+	}
+
+	if got := As(errors.New("error")); got != nil {
+		t.Errorf("As() = %v, want nil", got)
+	}
+}
+
+func TestUnwrap(t *testing.T) {
+	err := errors.New("error")
+	if got := Unwrap(&Error{Err: err}); got != err {
+		t.Errorf("As() = %v, want %v", got, err)
+	}
+}
