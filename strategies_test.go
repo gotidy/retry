@@ -7,10 +7,12 @@ import (
 )
 
 func TestDelays(t *testing.T) {
+	t.Parallel()
+
 	delays := Delays{time.Second, 2 * time.Second, 4 * time.Second, 8 * time.Second}
 	next := delays.Iterator()
 	for _, want := range append(delays, StopDelay) {
-		got := next()
+		got, _ := next()
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("got: %v, want: %v", got, want)
 		}
@@ -20,7 +22,7 @@ func TestDelays(t *testing.T) {
 func testRepeatedly(t *testing.T, b Strategy, want time.Duration) {
 	next := b.Iterator()
 	for i := 0; i < 10; i++ {
-		got := next()
+		got, _ := next()
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("got: %v, want: %v", got, want)
 		}
@@ -28,27 +30,39 @@ func testRepeatedly(t *testing.T, b Strategy, want time.Duration) {
 }
 
 func TestConstant(t *testing.T) {
+	t.Parallel()
+
 	delay := time.Second
 	testRepeatedly(t, Constant(delay), delay)
 }
 
 func TestZero(t *testing.T) {
+	t.Parallel()
+
 	testRepeatedly(t, Zero(), 0)
 }
 
 func TestStop(t *testing.T) {
+	t.Parallel()
+
 	testRepeatedly(t, Stop(), StopDelay)
 }
 
 func TestExponential(t *testing.T) {
+	t.Parallel()
+
 	testExponentialBackOff(t, Exponential(time.Second, 1.5, 0))
 }
 
 func TestExponentialBackOff(t *testing.T) {
+	t.Parallel()
+
 	testExponentialBackOff(t, Exponential(time.Second, 1.5, 0.5))
 }
 
 func TestTruncatedExponentialBackOff(t *testing.T) {
+	t.Parallel()
+
 	testExponentialBackOff(t, TruncatedExponential(time.Second, 1.5, 0, 10*time.Second))
 }
 
@@ -56,7 +70,7 @@ func testExponentialBackOff(t *testing.T, exp ExponentialBackOff) {
 	delay := exp.Start
 	next := exp.Iterator()
 	for i := 0; i < 10; i++ {
-		got := next()
+		got, _ := next()
 
 		if exp.Jitter != 0 {
 			minDelay := delay - time.Duration(exp.Jitter*float64(delay))
@@ -75,6 +89,8 @@ func testExponentialBackOff(t *testing.T, exp ExponentialBackOff) {
 }
 
 func TestJitter(t *testing.T) {
+	t.Parallel()
+
 	// 33% chance of being 1.
 	assertEquals(t, 1, jitter(2, 0.5, 0))
 	assertEquals(t, 1, jitter(2, 0.5, 0.33))

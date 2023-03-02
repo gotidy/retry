@@ -25,6 +25,8 @@ type options struct {
 	MaxElapsedTime time.Duration
 	// Notify
 	Notify Notify
+
+	Strategy Strategy
 }
 
 // Option is a retrying option setter.
@@ -33,7 +35,7 @@ type Option func(opts *options)
 // WithMaxRetries sets maximum retries.
 func WithMaxRetries(n int) Option {
 	return func(opts *options) {
-		opts.MaxRetries = n
+		opts.Strategy = MaxRetriesWrapper{MaxRetries: n}.Wrap(opts.Strategy)
 	}
 }
 
@@ -48,7 +50,7 @@ func WithTimeout(d time.Duration) Option {
 // Time after which retrying are stopped.
 func WithMaxElapsedTime(d time.Duration) Option {
 	return func(opts *options) {
-		opts.MaxElapsedTime = d
+		opts.Strategy = MaxElapsedTimeWrapper{MaxElapsedTime: d}.Wrap(opts.Strategy)
 	}
 }
 
@@ -61,7 +63,8 @@ func WithNotify(n Notify) Option {
 
 // DoR retries the operation with result and specified strategy.
 func DoR[T any](ctx context.Context, strategy Strategy, operation func(ctx context.Context) (T, error), o ...Option) (result T, err error) {
-	var opts options
+	opts := options{Strategy: strategy}
+
 	for _, opt := range o {
 		opt(&opts)
 	}
@@ -76,7 +79,7 @@ func DoR[T any](ctx context.Context, strategy Strategy, operation func(ctx conte
 	retrying := 1
 	var delay time.Duration
 
-	next := strategy.Iterator()
+	next := opts.Strategy.Iterator()
 	for {
 		if ctx.Err() != nil {
 			return ptr.Zero[T](), newError(err, ctx.Err(), "", retrying, delay, time.Since(start))
@@ -91,18 +94,11 @@ func DoR[T any](ctx context.Context, strategy Strategy, operation func(ctx conte
 			return ptr.Zero[T](), perm
 		}
 
+		var nErr error
+		delay, nErr := next()
 		elapsed := time.Since(start)
-		if opts.MaxElapsedTime > 0 && opts.MaxElapsedTime <= elapsed {
-			return ptr.Zero[T](), newError(err, ctx.Err(), fmt.Sprintf("retrying time elapsed: %s", opts.MaxElapsedTime), retrying, delay, time.Since(start))
-		}
-
-		if opts.MaxRetries > 0 && opts.MaxRetries <= retrying {
-			return ptr.Zero[T](), newError(err, ctx.Err(), fmt.Sprintf("maximum retries elapsed: %d", opts.MaxRetries), retrying, delay, time.Since(start))
-		}
-
-		delay = next()
 		if delay == StopDelay {
-			return ptr.Zero[T](), newError(err, ctx.Err(), "", retrying, delay, time.Since(start))
+			return ptr.Zero[T](), newError(err, ctx.Err(), nErr.Error(), retrying, delay, elapsed)
 		}
 
 		if opts.Notify != nil {
@@ -111,7 +107,7 @@ func DoR[T any](ctx context.Context, strategy Strategy, operation func(ctx conte
 
 		select {
 		case <-ctx.Done():
-			return ptr.Zero[T](), newError(err, ctx.Err(), "", retrying, delay, time.Since(start))
+			return ptr.Zero[T](), newError(err, ctx.Err(), "", retrying, delay, elapsed)
 		case <-time.After(delay):
 		}
 

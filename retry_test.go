@@ -9,6 +9,8 @@ import (
 )
 
 func TestDoWithResult(t *testing.T) {
+	t.Parallel()
+
 	const retries = 5
 	const want = 10
 	count := 0
@@ -32,6 +34,8 @@ func TestDoWithResult(t *testing.T) {
 }
 
 func TestDoWithResult_Error(t *testing.T) {
+	t.Parallel()
+
 	delays := Delays{time.Second, time.Second}
 	count := 0
 
@@ -48,6 +52,8 @@ func TestDoWithResult_Error(t *testing.T) {
 }
 
 func TestRetryWithResult_Context(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	_, err := DoR(ctx, Zero(), func(ctx context.Context) (int, error) {
 		cancel()
@@ -66,6 +72,8 @@ func TestRetryWithResult_Context(t *testing.T) {
 }
 
 func TestRetryWithResult_Timeout(t *testing.T) {
+	t.Parallel()
+
 	_, err := DoR(context.Background(), Constant(100*time.Millisecond), func(ctx context.Context) (int, error) {
 		return 0, errors.New("")
 	}, WithTimeout(time.Second))
@@ -75,6 +83,8 @@ func TestRetryWithResult_Timeout(t *testing.T) {
 }
 
 func TestRetryWithResult_MaxRetrying(t *testing.T) {
+	t.Parallel()
+
 	const retries = 5
 	count := 0
 	_, err := DoRN(context.Background(), Zero(), func(ctx context.Context) (int, error) {
@@ -84,12 +94,14 @@ func TestRetryWithResult_MaxRetrying(t *testing.T) {
 	if err == nil {
 		t.Error("expected error but got nil")
 	}
-	if count != retries {
+	if count != (1 /* first call */ + retries /* additional calls */) {
 		t.Errorf("unexpected count of retries: %d, expected: %d", count, retries)
 	}
 }
 
 func TestRetryWithResult_MaxElapsedTime(t *testing.T) {
+	t.Parallel()
+
 	_, err := DoRE(context.Background(), Constant(100*time.Millisecond), func(ctx context.Context) (int, error) {
 		return 0, errors.New("")
 	}, time.Second)
@@ -99,6 +111,8 @@ func TestRetryWithResult_MaxElapsedTime(t *testing.T) {
 }
 
 func TestRetry(t *testing.T) {
+	t.Parallel()
+
 	const retries = 5
 	count := 0
 
@@ -118,6 +132,8 @@ func TestRetry(t *testing.T) {
 }
 
 func TestPermanent(t *testing.T) {
+	t.Parallel()
+
 	want := errors.New("want")
 	err := Permanent(want)
 
@@ -132,6 +148,8 @@ func TestPermanent(t *testing.T) {
 }
 
 func TestDo_PermanentError(t *testing.T) {
+	t.Parallel()
+
 	const retries = 5
 	count := 0
 	wantErr := errors.New("error")
@@ -149,7 +167,9 @@ func TestDo_PermanentError(t *testing.T) {
 }
 
 func TestDo_Notify(t *testing.T) {
-	const retries = 2
+	t.Parallel()
+
+	const retries = 1
 	const constDelay = time.Microsecond
 
 	_ = Do(context.Background(), Constant(constDelay), func(ctx context.Context) error {
@@ -165,6 +185,8 @@ func TestDo_Notify(t *testing.T) {
 }
 
 func TestAs(t *testing.T) {
+	t.Parallel()
+
 	e := &Error{}
 	if got := As(e); e != got {
 		t.Errorf("As() = %v, want %v", got, e)
@@ -176,6 +198,8 @@ func TestAs(t *testing.T) {
 }
 
 func TestUnwrap(t *testing.T) {
+	t.Parallel()
+
 	err := errors.New("error")
 	if got := Unwrap(&Error{Err: err}); got != err {
 		t.Errorf("As() = %v, want %v", got, err)

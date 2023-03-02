@@ -1,15 +1,19 @@
 package retry
 
 import (
+	"errors"
 	"math/rand"
 	"time"
 )
+
+var ErrDelaysSpent = errors.New("all delays spent")
+var ErrStopped = errors.New("stopped")
 
 // StopDelay indicates that no more retries should be made.
 const StopDelay time.Duration = -1
 
 // Iterator is a delays generator.
-type Iterator func() time.Duration
+type Iterator func() (time.Duration, error)
 
 // Strategy is a retrying strategy for retrying an operation.
 type Strategy interface {
@@ -22,13 +26,13 @@ type Delays []time.Duration
 // Iterator returns the specified delays generator.
 func (d Delays) Iterator() Iterator {
 	i := 0
-	return func() time.Duration {
+	return func() (time.Duration, error) {
 		if i >= len(d) {
-			return StopDelay
+			return StopDelay, ErrDelaysSpent
 		}
 		current := d[i]
 		i++
-		return current
+		return current, nil
 	}
 }
 
@@ -37,8 +41,11 @@ type Constant time.Duration
 
 // Iterator returns constant delay generator.
 func (c Constant) Iterator() Iterator {
-	return func() time.Duration {
-		return time.Duration(c)
+	return func() (time.Duration, error) {
+		if time.Duration(c) == StopDelay {
+			return time.Duration(c), ErrStopped
+		}
+		return time.Duration(c), nil
 	}
 }
 
@@ -80,13 +87,13 @@ func TruncatedExponential(start time.Duration, factor, jitter float64, maxDelay 
 func (e ExponentialBackOff) Iterator() Iterator {
 	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	delay := e.Start
-	return func() time.Duration {
+	return func() (time.Duration, error) {
 		cur := delay
 		delay = time.Duration(float64(delay) * e.Factor)
 		if e.MaxDelay != 0 && delay >= e.MaxDelay {
 			delay = e.MaxDelay
 		}
-		return jitter(cur, e.Jitter, rand.Float64())
+		return jitter(cur, e.Jitter, rand.Float64()), nil
 	}
 }
 
