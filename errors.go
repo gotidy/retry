@@ -12,6 +12,7 @@ type PermanentError struct {
 }
 
 // Permanent wrap error with permanent error.
+// If operation returns a permanent error, retries will be stopped.
 func Permanent(err error) error {
 	if err == nil {
 		return nil

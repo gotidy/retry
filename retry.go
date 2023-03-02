@@ -1,3 +1,4 @@
+// Operations retries with different strategies.
 package retry
 
 import (
@@ -61,6 +62,7 @@ func WithNotify(n Notify) Option {
 }
 
 // DoR retries the operation with result and specified strategy.
+// To stop the retry, the operation must return a permanent error, see Permanent(err).
 func DoR[T any](ctx context.Context, strategy Strategy, operation func(ctx context.Context) (T, error), o ...Option) (result T, err error) {
 	opts := options{Strategy: strategy}
 
@@ -131,6 +133,7 @@ func DoRNE[T any](ctx context.Context, strategy Strategy, operation func(ctx con
 }
 
 // Do retries the operation with specified strategy.
+// To stop the retry, the operation must return a permanent error, see Permanent(err).
 func Do(ctx context.Context, strategy Strategy, operation func(ctx context.Context) error, o ...Option) (err error) {
 	_, err = DoR(ctx, strategy, func(ctx context.Context) (struct{}, error) {
 		return struct{}{}, operation(ctx)
