@@ -51,3 +51,22 @@ func ExampleExponential() {
 	// 4s 3
 	// <nil>
 }
+
+func ExampleMaxRetriesWrapper() {
+	count := 1
+	s := MaxRetries(5, Constant(time.Second))
+	err := Do(context.Background(), s, func(ctx context.Context) error {
+		count++
+		return errors.New("don't touch me")
+	}, WithNotify(func(err error, delay time.Duration, try int, elapsed time.Duration) {
+		fmt.Println(delay, try)
+	}))
+	fmt.Println(Unwrap(err))
+	// Output:
+	// 1s 1
+	// 1s 2
+	// 1s 3
+	// 1s 4
+	// 1s 5
+	// don't touch me
+}
