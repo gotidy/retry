@@ -61,7 +61,7 @@ func ExampleMaxRetriesWrapper() {
 	}, WithNotify(func(err error, delay time.Duration, try int, elapsed time.Duration) {
 		fmt.Println(delay, try)
 	}))
-	fmt.Println(err)
+	fmt.Println(Unwrap(err))
 	// Output:
 	// 1s 1
 	// 1s 2

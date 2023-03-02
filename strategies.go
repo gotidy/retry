@@ -85,7 +85,7 @@ func TruncatedExponential(start time.Duration, factor, jitter float64, maxDelay 
 
 // Iterator returns exponential backoff delays generator.
 func (e ExponentialBackOff) Iterator() Iterator {
-	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
+	rand := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec
 	delay := e.Start
 	return func() (time.Duration, error) {
 		cur := delay
