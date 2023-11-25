@@ -11,7 +11,7 @@ Retry operations with constant, delays and exponential backoff strategies.
 
 `go get github.com/gotidy/retry`
 
-Required 1.18 version of Go compiler.
+Required at least 1.18 version of Go compiler.
 
 ## Example
 
