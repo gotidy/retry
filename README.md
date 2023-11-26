@@ -15,10 +15,46 @@ Required at least 1.18 version of Go compiler.
 
 ## Example
 
+### Custom delays
+
 ```go
-delays := Delays[1*time.Second, 2*time.Second, 4*time.Second]
-result, err := DoR(ctx, delays, func(ctx context.Context) (int, error) {
+delays := retry.Delays[1*time.Second, 2*time.Second, 4*time.Second]
+result, err := retry.DoR(ctx, delays, func(ctx context.Context) (int, error) {
     return 0, errors.New("")
+})
+```
+
+### Exponential
+
+```go
+err := retry.Do(ctx, retry.Exponential(time.Second, 1.5, 0.5), func(ctx context.Context) (int, error) {
+    return 0, errors.New("")
+})
+```
+
+```go
+delays := retry.Delays[1*time.Second, 2*time.Second, 4*time.Second]
+result, err := retry.DoR(ctx, retry.TruncatedExponential(time.Second, 1.5, 0, 10*time.Second), func(ctx context.Context) (int, error) {
+    return 0, errors.New("")
+})
+```
+
+There are also other strategies such as Constant, Zero.
+
+### Permanent error
+
+If need prevent retrying wrap error with Permanent.
+
+```go
+result, err := retry.DoR(ctx, retry.Constant(time.Second), func(ctx context.Context) (int, error) {
+    result, err := DoSomething()
+    switch {
+    case errors.Is(err, ErrInvalidArguments)  
+        return retry.Permanent(err) // Prevent retrying.  
+    default:
+        return err
+    }
+    return result, nil
 })
 ```
 
