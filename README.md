@@ -43,7 +43,7 @@ There are also other strategies such as Constant, Zero.
 
 ### Permanent error
 
-If need prevent retrying wrap error with Permanent.
+If need to prevent retrying wrap error with `Permanent``.
 
 ```go
 result, err := retry.DoR(ctx, retry.Constant(time.Second), func(ctx context.Context) (int, error) {
