@@ -2,3 +2,7 @@ github.com/gotidy/lib v0.0.6 h1:1YAGNeDXF0CXfyamZ2IgkKlgyyKT7J7JbGUK1k1o6aw=
 github.com/gotidy/lib v0.0.6/go.mod h1:zBjPY+NFQ6qSoqbN4acO7v8B3DvC2L8vFWqHBwuNnDI=
 github.com/gotidy/lib v0.1.0 h1:ZPubLzUmXbUfNR55d05c1BRgAvjga3DnT6DiqoTau/I=
 github.com/gotidy/lib v0.1.0/go.mod h1:UmWhjJpdID/ONVbhCuzJGShkFxHoyIuXtu3s+0DNYtQ=
+github.com/gotidy/lib v0.1.6 h1:nhIEAci6z869HIH3/vkbEeZdKtnjvkfHcv24E3g4K24=
+github.com/gotidy/lib v0.1.6/go.mod h1:UmWhjJpdID/ONVbhCuzJGShkFxHoyIuXtu3s+0DNYtQ=
+github.com/gotidy/lib v0.1.8 h1:DTti//ukra9nZ14Bpx5eHONaks51EXFcARcGfllozk0=
+github.com/gotidy/lib v0.1.8/go.mod h1:UmWhjJpdID/ONVbhCuzJGShkFxHoyIuXtu3s+0DNYtQ=
