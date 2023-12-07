@@ -33,7 +33,6 @@ err := retry.Do(ctx, retry.Exponential(time.Second, 1.5, 0.5), func(ctx context.
 ```
 
 ```go
-delays := retry.Delays[1*time.Second, 2*time.Second, 4*time.Second]
 result, err := retry.DoR(ctx, retry.TruncatedExponential(time.Second, 1.5, 0, 10*time.Second), func(ctx context.Context) (int, error) {
     return 0, errors.New("")
 })
